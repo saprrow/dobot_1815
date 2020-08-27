@@ -84,6 +84,34 @@ def get_com():
     #TODO: choose right COMs automatically
     return "COM5"
 
+def pick(dx, dy, dz, x, y, index_h):
+    '''
+    picks red things to one position and stacks them.
+    param:
+    x,y,z: the position of red things
+    dx, dy: position where robot put down red things
+    index_h: index to adjust droping height
+    '''
+    dType.SetPTPJointParams(api, 30, 0, 20, 0, 20, 0, 0, 0, isQueued=1)
+    dType.SetPTPCommonParams(api, 30, 20, isQueued=1)
+    print("move to fish")
+    print("actual position:",dx, dx)
+    execute_arm_cmd(api, dx, dy, -20, 0)
+    time.sleep(0.2)
+    execute_arm_cmd(api, dx, dy, -43, 0)
+    time.sleep(0.2)
+    execute_endeffector_cmd(api, suck=1, enable=1)
+    time.sleep(1)
+    execute_arm_cmd(api, dx, dy, 40, 0)
+    time.sleep(0.2)
+    execute_arm_cmd(api, x, y, 40, 0)
+    time.sleep(0.2)
+    execute_arm_cmd(api, x, y, -29 + (i-1) * 44, 0)
+    execute_endeffector_cmd(api, suck=0, enable=0)
+    time.sleep(0.2)
+    execute_arm_cmd(api, x, y, (i-1) * 44, 0)
+    time.sleep(0.2)
+
 if __name__ == "__main__":
     print("action!")
     com = get_com()
@@ -115,38 +143,21 @@ if __name__ == "__main__":
 
         #cv2.imshow("image1",frame)
         #cv2.waitKey() #make imshow work 
+        
         d = Detect("detect.jpg")
         d.img_process_main()
 
-        #resure
+        #no fish then stop
         if(d.dx == 0 and d.dy == 0):
             print("victory!")
             break
-            
+
         d.img_process_main()
         print("camera position:", d.dx, d.dy)
         
         dx = 0.479 * d.dx - 0.263 * d.dy
         dy = -0.172 * d.dx - 0.566 * d.dy
         
-        #set parameters of dobot
-        dType.SetPTPJointParams(api, 30, 0, 20, 0, 20, 0, 0, 0, isQueued=1)
-        dType.SetPTPCommonParams(api, 30, 20, isQueued=1)
-        print("move to fish")
-        print("actual position:",dx, dx)
-        execute_arm_cmd(api, dx, dy, -20, 0)
-        time.sleep(0.2)
-        execute_arm_cmd(api, dx, dy, -43, 0)
-        time.sleep(0.2)
-        execute_endeffector_cmd(api, suck=1, enable=1)
-        time.sleep(1)
-        execute_arm_cmd(api, dx, dy, 40, 0)
-        time.sleep(0.2)
-        execute_arm_cmd(api, 298, 8, 40, 0)
-        time.sleep(0.2)
-        execute_arm_cmd(api, 298, 8, -29 + (i-1) * 44, 0)
-        execute_endeffector_cmd(api, suck=0, enable=0)
-        time.sleep(0.2)
-        execute_arm_cmd(api, 298, 8, (i-1) * 44, 0)
-        time.sleep(0.2)
+        #excute picking
+        pick(dx, dy, -42, 298, 8, i)
         i += 1
