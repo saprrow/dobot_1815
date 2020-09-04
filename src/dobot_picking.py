@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../lib")
+
 import DobotDllType as dType
 import time
 import cv2
