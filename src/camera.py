@@ -2,6 +2,91 @@
 import cv2
 import numpy as np
 
+class YoloChessDetect:
+    def __init__(self, img_path, configPath, weightsPath):
+        self.img_path = img_path
+        self.configPath = configPath
+        self.weightsPath = weightsPath
+
+    def get_img(self):
+        img = cv2.imread(self.path)
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        mtx = np.matrix([[2.19338789e+03, 0.00000000e+00, 3.30891168e+02],
+         [0.00000000e+00, 2.09815325e+03, 2.36768459e+02],
+        [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+
+        dist = np.matrix([[-3.67793486e+00,  1.03355499e+02,  3.35118957e-03,  8.29386381e-03,
+                -3.63191570e+03]])
+
+        h, w = img.shape[:2]
+        newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+
+        dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
+
+        # crop the image
+        x,y,w,h = roi
+        self.img = dst[y:y+h, x:x+w]
+
+    def detect_chess(self):
+        # initialize a list of colors to represent each possible class label
+        image = self.img
+        net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
+        np.random.seed(42)
+        COLORS = np.random.randint(0, 255, size=(len(LABELS), 3), dtype="uint8")
+        (H, W) = image.shape[:2]
+        print(H, W)
+        
+        # determine only the "ouput" layers name which we need from YOLO
+        ln = net.getLayerNames()
+        ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+        
+        # construct a blob from the input image and then perform a forward pass of the YOLO object detector, 
+        # giving us our bounding boxes and associated probabilities
+        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+        net.setInput(blob)
+        layerOutputs = net.forward(ln)
+        
+        boxes = []
+        confidences = []
+        classIDs = []
+        threshold = 0.2
+        
+        # loop over each of the layer outputs
+        for output in layerOutputs:
+            # loop over each of the detections
+            for detection in output:
+                # extract the class ID and confidence (i.e., probability) of
+                # the current object detection
+                scores = detection[5:]
+                classID = np.argmax(scores)
+                confidence = scores[classID]
+
+                # filter out weak predictions by ensuring the detected
+                # probability is greater than the minimum probability
+                # confidence type=float, default=0.5
+                if confidence > threshold:
+                    # scale the bounding box coordinates back relative to the
+                    # size of the image, keeping in mind that YOLO actually
+                    # returns the center (x, y)-coordinates of the bounding
+                    # box followed by the boxes' width and height
+                    box = detection[0:4] * np.array([W, H, W, H])
+                    (centerX, centerY, width, height) = box.astype("int")
+
+                    # update our list of bounding box coordinates, confidences,
+                    # and class IDs
+                    boxes.append([int(centerX), int(centerY), int(width), int(height)])
+                    classIDs.append(classID)
+                    confidences.append(float(confidence))
+
+        # apply non-maxima suppression to suppress weak, overlapping bounding boxes
+        idxs = cv2.dnn.NMSBoxes(boxes, confidences, threshold, 0.1)
+        xyc = {"o":[], "x":[], "chess_board":[]}
+        for i in idxs.flatten():
+        # ensure at least one detection exists
+            xyc[LABELS[classIDs[i]]].append(boxes[i][:2])
+
+        return xyc
+
 
 class Detect:
     def __init__(self, path):
