@@ -12,13 +12,13 @@ class Dobot:
         api = dType.load()
         self.get_com()
         self.connect_to_Dobot()
-    
+
     def get_com(self):
-    #TODO: choose right COMs automatically
+        #TODO: choose right COMs automatically
         self.com_port = "COM3"
 
     def connect_to_Dobot(self):
-    """
+        """
     connect to the Dobot platform
     :param com_port: The port of the DOBOT you want to connect to
     :return:
@@ -26,9 +26,9 @@ class Dobot:
     api: The Handle of the Dobot
     """
         CON_STR = {
-            dType.DobotConnect.DobotConnect_NoError:  "DobotConnect_NoError",
-            dType.DobotConnect.DobotConnect_NotFound: "DobotConnect_NotFound",
-            dType.DobotConnect.DobotConnect_Occupied: "DobotConnect_Occupied"}
+                dType.DobotConnect.DobotConnect_NoError:  "DobotConnect_NoError",
+                dType.DobotConnect.DobotConnect_NotFound: "DobotConnect_NotFound",
+                dType.DobotConnect.DobotConnect_Occupied: "DobotConnect_Occupied"}
         #Connect Dobot
         state = dType.ConnectDobot(api, self.com_port, 115200)
         print("Connect status:", CON_STR[state[0]])
@@ -39,7 +39,7 @@ class Dobot:
             exit(0)
 
     def set_init_position(self):
-    """
+        """
     reset the Dobot
     :param api:  Handle of the Dobot
     :return:
@@ -48,7 +48,7 @@ class Dobot:
         dType.SetHOMEParams(api, 200, 200, 200, 200, isQueued=1)
         lastIndex = dType.SetHOMECmd(api, temp=0, isQueued=1)[0]
         dType.SetQueuedCmdStartExec(api)  #start to Excute command
-        
+
         #Wait for Excuting Last Command
         while lastIndex > dType.GetQueuedCmdCurrentIndex(api)[0]:
             dType.dSleep(100)
@@ -56,7 +56,7 @@ class Dobot:
         dType.SetQueuedCmdStopExec(api)
 
     def execute_arm_cmd(self, point_x=180, point_y=0, point_z=15, point_r=0):
-    """
+        """
     control the position of arm
     """
 
@@ -69,8 +69,8 @@ class Dobot:
         dType.SetQueuedCmdStopExec(api)
 
     def execute_endeffector_cmd(self, suck=0, enable=0, isQueued=0):
-    # enable = 1  # 0 -> no, 1 -> yes
-    # suck = 1  # 0 -> no, 1 -> yes
+        # enable = 1  # 0 -> no, 1 -> yes
+        # suck = 1  # 0 -> no, 1 -> yes
         lastIndex1 = dType.SetEndEffectorSuctionCup(api, enable, suck, isQueued=1)
         dType.SetQueuedCmdStartExec(api)
         dType.SetQueuedCmdStopExec(api)
@@ -79,9 +79,7 @@ class Dobot:
         '''
         picks red things to one position and stacks them.
         param:
-        x,y,z: the position of red things
-        dx, dy: position where robot put down red things
-        index_h: index to adjust droping height
+        xy: the position of palce of chess
         '''
         dType.SetPTPJointParams(api, 30, 0, 20, 0, 20, 0, 0, 0, isQueued=1)
         dType.SetPTPCommonParams(api, 30, 20, isQueued=1)
@@ -113,34 +111,24 @@ class Chess(Dobot):
         self.cx = xyc["chess_board"][0]
         self.cy = xyc["chess_board"][1]
         del xyc["chess_board"]
-        
+
         for key, value in xyc.items(): 
             if value != []:
                 self.turn = key
                 self.cx = value[0]
                 self.cy = value[1]
 
-        if self.turn = "x":
+        if self.turn == "x":
             self.computer = 'x'
             self.computer_move()
         else:
             self.computer = 'o'
-            self.update_board()
+            self.update_board(xyc)
 
     def xy_to_ij(self, xy):
         a = round((xy[1] - cby) / self.offset) + 1
         b = round((xy[0] - cbx) / self.offset) + 1
         return a, b
-
-    def board_state(self, xyc):
-        i, j = 0, 0
-        del xyc["chess_board"]
-        for key, lv in xyc.items():
-            for xy in lv:
-                i, j = xy_to_ij(xy, cbx, cby)
-                if i >= 2 or j >=2:
-                    continue 
-                board2[3*i+j] = key
 
     def update_board(self, xyc):
         i, j = 0, 0
@@ -166,19 +154,19 @@ class Chess(Dobot):
     def get_board_grids(self):
         x, y = 0, 0
         for i in range(-1, 2):
-            for j in range(-1, 2)：
+            for j in range(-1, 2):
                 x = self.cx + i * self.offset
                 y = self.cy + j * self.offset
                 self.board_grids.append(self.transform_xy(x, y))
 
     def legal_moves(self):
-    #return empty position
+        #return empty position
         moves=[]
         for i in range(9):
             if self.board[i]==" ":
                 moves.append(i)
         return moves
-    
+
     def display_board(self):
         board2=self.board[:]
         for i in range(len(self.board)):
@@ -200,31 +188,31 @@ class Chess(Dobot):
         if " " not in boards:
             return "平局"
         return False
-    
+
     def computer_move(self):
         board2=self.board[:]
         bestmove=(4,0,2,6,8,1,3,5,7)#最佳下棋位置顺序表
         legalmove=self.legal_moves()#获取空白位置
         for move in legalmove:
-        #if dobot wins the go here
+            #if dobot wins the go here
             if self.winner(board2)==self.computer:
                 print("Go here:", move)
                 self.put_chess(board_grids[move])
                 self.h_index += 1
                 self.board[move] = self.computer
- 
+
             elif self.winner(board2)==self.human:
                 print("Go here:", move)
                 self.put_chess(board_grids[move])
                 self.h_index += 1
                 self.board[move] = self.computer
 
-            else move in legalmove:
+            else :
                 print("Go here:", move)
                 self.put_chess(board_grids[move])
                 self.h_index += 1
                 self.board[move] = self.computer
-    
+
     def next_turn(self,turn):
         if turn=="o":
             return "x"
@@ -238,7 +226,7 @@ if __name__ == '__main__':
     configPath = os.path.join("yolov3-tiny.cfg")
     weightsPath = os.path.join("yolov3-tiny_final.weights")
     
-    chess_detect = YoloChessDetect(img_path, configPath, weightsPath)
+    chess_detect = YoloChessDetect(configPath, weightsPath)
     xyc = chess_detect.detect_chess()
 
     chess=Chess()
@@ -247,7 +235,9 @@ if __name__ == '__main__':
 
     while not chess.winner(chess.board):
         if turn==chess.human:
-            chess.update_board()
+            xyc = chess_detect.detect_chess()
+            while chess.update_board(xyc):
+                xyc = chess_detect.detect_chess()
         else:
             move=chess.computer_move()
 

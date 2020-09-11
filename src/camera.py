@@ -4,13 +4,19 @@ import numpy as np
 
 class YoloChessDetect:
     def __init__(self, img_path, configPath, weightsPath):
-        self.img_path = img_path
         self.configPath = configPath
         self.weightsPath = weightsPath
+        self.img_parh = "detect.jpg"   
 
     def get_img(self):
-        img = cv2.imread(self.path)
-        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        cap = cv2.VideoCapture(1)
+        for index in range(5):
+            if cap.isOpened():
+                retval, frame = cap.read()
+                cv2.imwrite(self.img_parh, frame)
+                time.sleep(0.2)
+        img = cv2.imread(self.img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         mtx = np.matrix([[2.19338789e+03, 0.00000000e+00, 3.30891168e+02],
          [0.00000000e+00, 2.09815325e+03, 2.36768459e+02],
         [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
@@ -29,6 +35,7 @@ class YoloChessDetect:
 
     def detect_chess(self):
         # initialize a list of colors to represent each possible class label
+        self.get_img()
         image = self.img
         net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
         np.random.seed(42)
